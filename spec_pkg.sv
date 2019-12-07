@@ -13,7 +13,11 @@ class spec extends database_item;
     real_field min;
     real_field typ;
     real_field max;
-    real_field typ_tol;
+    real_field typ_tol; //Allowable tolerance on typical spec, defaults to +/- 10%
+    
+    //Informational Fields
+    //  alternate_id can be used to link aliased name in other database
+    //  source_table_name can be used to cite specification document
     string_field alternate_id;
     string_field source_table_name;
 
@@ -22,6 +26,7 @@ class spec extends database_item;
         `initialize_field(typ_tol, real, 0.1)
     endfunction
     
+    //alternate_id can be used to link aliased name in other database
     function void set_info_fields(string alternate_id = "", string source_table_name = "");
         if(alternate_id != "" && source_table_name != "") begin
             `initialize_field(alternate_id, string, alternate_id);
