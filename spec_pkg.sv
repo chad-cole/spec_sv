@@ -10,35 +10,25 @@ class spec extends database_item;
 
     `register(spec)
 
-    database_item_field#(real) min;
-    database_item_field#(real) typ;
-    database_item_field#(real) max;
-    database_item_field#(real) typ_tol;
-    database_item_field#(int)  sf_upload;
-    database_item_field#(int)  scm;
-    database_item_field#(string) specid;
-    database_item_field#(string) vvcm_table;
+    real_field min;
+    real_field typ;
+    real_field max;
+    real_field typ_tol;
+    string_field alternate_id;
+    string_field source_table_name;
 
     function new(string name); 
         super.new(name); 
         `initialize_field(typ_tol, real, 0.1)
-        `initialize_field(sf_upload, int, 1'b0);
-        `initialize_field(scm, int, 1'b0);
     endfunction
     
-    function void set_sf_fields(string specid = "", string vvcm_table = "");
-        if(specid != "" && vvcm_table != "") begin
-            `initialize_field(sf_upload, int, 1'b1);
-            `initialize_field(scm, int, 1'b1);
-            `initialize_field(specid, string, specid);
-            `initialize_field(vvcm_table, string, vvcm_table);
+    function void set_info_fields(string alternate_id = "", string source_table_name = "");
+        if(alternate_id != "" && source_table_name != "") begin
+            `initialize_field(alternate_id, string, alternate_id);
+            `initialize_field(source_table_name, string, source_table_name);
         end
-    endfunction : set_sf_fields
+    endfunction : set_info_fields
     
-    function void set_sf_upload(bit upload);
-        `initialize_field(sf_upload, int, upload);
-    endfunction : set_sf_upload
-
     function void set_typ_tol(real tol = 0.1);
         `initialize_field(typ_tol, real, tol)
     endfunction : set_typ_tol
@@ -62,36 +52,23 @@ class spec extends database_item;
     function automatic bit test(real value, string conditions = "");
         bit passes;
         real min, typ, max, typ_tol;
-        string sf, scm;
         begin
-            sf  = (this.sf_upload.get() ? "sf" : "");
-            scm = (this.scm.get() ? "scm" : "");
             if(this.exists("max") && this.exists("min")) begin //MIN and MAX
                 min = this.min.get();
                 max = this.max.get();
                 passes = (value >= min) && (value <= max);
-                $display($sformatf("#%0s#\tva_cb_min_max[%s][%s][%0s]{}=%0.3e,\tlimit_min=%0.3e,\tlimit_max=%0.3e,\tconditions={%0s},\ttime=%g",
-                    passes ? "PASS" : "FAIL", sf, scm, this.name, value, min, max, conditions, $realtime));
             end else if (this.exists("min")) begin //MIN only
                 min = this.min.get();
                 passes = (value >= min);
-                $display($sformatf("#%0s#\tva_cb_min[%s][%s][%0s]{}=%0.3e,\tlimit_min=%0.3e,\tconditions={%0s},\ttime=%g",
-                    passes ? "PASS" : "FAIL", sf, scm, this.name, value, min, conditions, $realtime));
             end else if (this.exists("max")) begin //MAX only
                 max = this.max.get();
                 passes = (value <= max);
-                $display($sformatf("#%0s#\tva_cb_max[%s][%s][%0s]{}=%0.3e,\tlimit_max=%0.3e,\tconditions={%0s},\ttime=%g",
-                    passes ? "PASS" : "FAIL", sf, scm, this.name, value, max, conditions, $realtime));
             end else if (this.exists("typ")) begin //TYP only
                 typ = this.typ.get();
                 typ_tol = this.typ_tol.get();
                 passes = (value >= typ*(1-typ_tol)) && (value <= typ*(1+typ_tol));
-                $display($sformatf("#%0s#\tva_cb_typ[%s][%s][%0s]{}=%0.3e,\tlimit_min=%0.3e,\tlimit_max=%0.3e,\tconditions={%0s},\ttime=%g",
-                    passes ? "PASS" : "FAIL", sf, scm, this.name, value, typ*(1-typ_tol), typ*(1+typ_tol), conditions, $realtime));
             end else begin
                 passes = 1'b0;
-                $display($sformatf("#%0s#\tva_cb_no_limits[%s][scm][%0s]{}=%0.3e,\tconditions={%0s},\ttime=%g",
-                    passes ? "PASS" : "FAIL", sf, this.name, value, conditions, $realtime));
             end
             return passes;
         end
@@ -108,10 +85,10 @@ class spec_database extends database#(spec);
     function new(string name = "spec_database"); this.name = name; endfunction
     
     function spec create_spec(string name, 
-            min="", typ="", max="", specid = "", vvcm_table="");
+            min="", typ="", max="", alternate_id = "", source_table_name="");
         spec new_spec = super.create_item(name);
         new_spec.set_limits(min, typ, max);
-        new_spec.set_sf_fields(specid, vvcm_table);
+        new_spec.set_info_fields(alternate_id, source_table_name);
         return new_spec;
     endfunction
 
